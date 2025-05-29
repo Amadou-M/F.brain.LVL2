@@ -1,33 +1,39 @@
+# Étape 1 : Image Python minimale
 FROM python:3.11-slim
 
-# Définir le répertoire de travail
+# Étape 2 : Définir le répertoire de travail
 WORKDIR /app
 
-# Installer les dépendances système nécessaires
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       gcc \
-       libpq-dev \
-    && pip install --no-cache-dir poetry==2.1.2 \
+# Étape 3 : Installer les dépendances système
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libpq-dev \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier les fichiers de dépendances
+# Étape 4 : Installer Poetry
+ENV POETRY_VERSION=1.8.2
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+
+# Étape 5 : Empêcher Poetry de créer un venv
+ENV POETRY_VIRTUALENVS_CREATE=false \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Étape 6 : Copier les fichiers de dépendances
 COPY pyproject.toml poetry.lock ./
 
-# Empêcher Poetry de créer des environnements virtuels
-ENV POETRY_VIRTUALENVS_CREATE=false
-
-# Installer les dépendances sans installer le projet
+# Étape 7 : Installer les dépendances (hors projet)
 RUN poetry install --no-root --no-interaction --no-ansi
 
-# Copier le reste des fichiers de l'application
+# Étape 8 : Copier le reste du projet
 COPY . .
 
-# Optionnel : exposer un port (ex: 8000 pour Django)
+# Étape 9 : Exposer le port pour Gunicorn ou Django dev server
 EXPOSE 8000
 
-# Commande par défaut (à adapter selon ton framework)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
+# Étape 10 : Commande par défaut (à surcharger dans docker-compose)
+CMD ["gunicorn", "server_config.wsgi:application", "--bind", "0.0.0.0:8000"]
