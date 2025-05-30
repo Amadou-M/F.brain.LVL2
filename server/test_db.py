@@ -1,13 +1,16 @@
 import psycopg2
+import os
+from dotenv import load_dotenv
 
-try:
-    conn = psycopg2.connect(
-        dbname='devops_db',
-        user='devops_user',
-        password='devops_pass',
-        host='localhost'  # ou 'db' si en Docker
-    )
-    print("✅ Connexion à PostgreSQL réussie!")
-    conn.close()
-except Exception as e:
-    print(f"❌ Erreur de connexion: {e}")
+load_dotenv()
+conn_params = {
+    'dbname': os.getenv('POSTGRES_DB'),
+    'user': os.getenv('POSTGRES_USER'),
+    'password': os.getenv('POSTGRES_PASSWORD'),
+    'host': os.getenv('POSTGRES_HOST'),
+    'port': '5432'
+}
+print(conn_params)
+conn = psycopg2.connect(**conn_params)
+print("Connexion réussie")
+conn.close()

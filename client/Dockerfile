@@ -1,34 +1,20 @@
-# Étape 1 : Build de l'app frontend
-FROM node:20-alpine AS build
+# Utiliser une image Node.js légère
+FROM node:20
 
+# Définir le répertoire de travail
 WORKDIR /app
 
-# Copier uniquement les fichiers de dépendances
+# Copier les fichiers de dépendances
 COPY package.json yarn.lock ./
 
-# Installer les dépendances avec Yarn
-RUN yarn install --frozen-lockfile
+# Installer les dépendances
+RUN yarn install
 
-# Copier le reste de l'app
+# Copier le reste du projet
 COPY . .
 
-# Compiler l'app pour la production
-RUN yarn build
+# Exposer le port pour le serveur de développement
+EXPOSE 5173
 
-# Étape 2 : Serveur web statique avec Nginx
-FROM nginx:alpine
-
-# Supprimer la config Nginx par défaut
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Ajouter ta propre config compatible SPA
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copier le build React vers Nginx
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Exposer le port web
-EXPOSE 80
-
-# Lancer Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Commande pour lancer le serveur de développement
+CMD ["yarn", "dev"]

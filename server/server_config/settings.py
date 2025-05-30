@@ -1,20 +1,16 @@
 import os
 from pathlib import Path
-from server_config.base_settings import *
+from dotenv import load_dotenv
 
-# -------------------------------------------------------
-# Path Configuration
-# -------------------------------------------------------
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-# -------------------------------------------------------
-# Debug & Hosts
-# -------------------------------------------------------
-DEBUG = False
+
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# -------------------------------------------------------
-# Application Definition
-# -------------------------------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -22,19 +18,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Vos applications personnalisées
-    # ...
-    
-    # Applications tierces
-    'django_prometheus',
-    'django_celery_results',
-    'django_celery_beat',
+    'rest_framework',
+    'library',
 ]
 
-# -------------------------------------------------------
-# Middleware Configuration
-# -------------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -45,13 +32,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# -------------------------------------------------------
-# Templates Configuration
-# -------------------------------------------------------
+ROOT_URLCONF = 'server_config.urls'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -64,38 +50,19 @@ TEMPLATES = [
     },
 ]
 
-# -------------------------------------------------------
-# Database Configuration
-# -------------------------------------------------------
+WSGI_APPLICATION = 'server_config.wsgi.application'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'devops_db'),
-        'USER': os.getenv('POSTGRES_USER', 'devops_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'devops_pass'),
-        'HOST': os.getenv('POSTGRES_HOST', 'db'),
-        'PORT': 5432,
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('POSTGRES_HOST'),
+        'PORT': '5432',
     }
 }
 
-# -------------------------------------------------------
-# Celery Configuration
-# -------------------------------------------------------
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "amqp://guest:guest@rabbitmq:5672//")
-CELERY_RESULT_BACKEND = "django-db"
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-
-# -------------------------------------------------------
-# Static Files Configuration
-# -------------------------------------------------------
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# -------------------------------------------------------
-# Authentication & URLs
-# -------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -111,13 +78,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-ROOT_URLCONF = 'server_config.urls'
-WSGI_APPLICATION = 'server_config.wsgi.application'
-
-# -------------------------------------------------------
-# Internationalization
-# -------------------------------------------------------
-LANGUAGE_CODE = 'fr-fr'
+LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
+STATIC_URL = 'static/'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
