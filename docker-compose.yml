@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   db:
     image: postgres:latest
@@ -15,7 +14,7 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-  web:
+  server:
     build:
       context: ./server
       dockerfile: Dockerfile
@@ -53,7 +52,25 @@ services:
       - db
       - rabbitmq
     command: celery -A server_config worker --loglevel=info
-  frontend:
+  celery_beat:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - ./server:/app
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+    depends_on:
+      - db
+      - rabbitmq
+    command: celery -A server_config beat --loglevel=info
+  client:
     build:
       context: ./client
       dockerfile: Dockerfile
@@ -66,14 +83,14 @@ services:
       - NODE_ENV=development
     command: yarn dev
   nginx:
-    image: nginx:latest
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
     ports:
       - "80:80"
-    volumes:
-      - ./proxy:/etc/nginx/conf.d
     depends_on:
-      - web
-      - frontend
+      - server
+      - client
   prometheus:
     image: prom/prometheus:latest
     volumes:
@@ -91,7 +108,3 @@ services:
       - "3000:3000"
 volumes:
   postgres_data:
-    driver: local # Ensure that the environment variables are set in a .env file or in your environment
-networks:
-  default:
-    driver: bridge      
