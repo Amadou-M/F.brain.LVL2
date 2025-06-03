@@ -1,11 +1,18 @@
+global:
+  scrape_interval: 15s  # Intervalle par défaut entre chaque collecte
+
 scrape_configs:
   - job_name: 'django'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['server:8000']
+      - targets: ['server:8000']  # Remplacer 'server' par le nom du service Docker ou l'IP réelle
+
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['prometheus:9090']
+      - targets: ['localhost:9090']  # Si Prometheus tourne dans le même conteneur
+      # ou 'prometheus:9090' si c'est un nom de service dans Docker Compose
+
   - job_name: 'rabbitmq'
+    metrics_path: '/metrics'  # utile si le chemin est différent
     static_configs:
-      - targets: ['rabbitmq:15672']
+      - targets: ['rabbitmq:9419']  # Port d’export des métriques Prometheus
