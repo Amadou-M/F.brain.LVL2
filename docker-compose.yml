@@ -9,11 +9,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
+
   server:
     build:
       context: ./server
@@ -33,7 +35,8 @@ services:
     depends_on:
       - db
       - rabbitmq
-    command: gunicorn server_config.wsgi:application --bind 0.0.0.0:8000
+    command: ["./wait-for-db.sh", "poetry", "run", "gunicorn", "server_config.wsgi:application", "--bind", "0.0.0.0:8000"]
+
   celery:
     build:
       context: ./server
@@ -51,7 +54,8 @@ services:
     depends_on:
       - db
       - rabbitmq
-    command: celery -A server_config worker --loglevel=info
+    command: ["./wait-for-db.sh", "poetry", "run", "celery", "-A", "server_config", "worker", "--loglevel=info"]
+
   celery_beat:
     build:
       context: ./server
@@ -69,7 +73,8 @@ services:
     depends_on:
       - db
       - rabbitmq
-    command: celery -A server_config beat --loglevel=info
+    command: ["./wait-for-db.sh", "poetry", "run", "celery", "-A", "server_config", "beat", "--loglevel=info"]
+
   client:
     build:
       context: ./client
@@ -82,6 +87,7 @@ services:
     environment:
       - NODE_ENV=development
     command: yarn dev
+
   nginx:
     build:
       context: ./proxy
@@ -91,6 +97,7 @@ services:
     depends_on:
       - server
       - client
+
   prometheus:
     image: prom/prometheus
     ports:
@@ -109,4 +116,4 @@ services:
       - "3000:3000"
 
 volumes:
-  postgres_data: 
+  postgres_data:
