@@ -266,7 +266,7 @@ dev : Pour le développement et les tests.
 
 
 
-master : Pour la production.
+main : Pour la production.
 
 Configuration GitHub Actions
 
@@ -278,7 +278,7 @@ on:
   push:
     branches:
       - dev
-      - master
+      - main
   pull_request:
     branches:
       - dev
