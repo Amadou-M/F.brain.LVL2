@@ -9,12 +9,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - app-network
 
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app-network
 
   server:
     build:
@@ -36,6 +42,8 @@ services:
       - db
       - rabbitmq
     command: ["./wait-for-db.sh", "poetry", "run", "gunicorn", "server_config.wsgi:application", "--bind", "0.0.0.0:8000"]
+    networks:
+      - app-network
 
   celery:
     build:
@@ -55,6 +63,8 @@ services:
       - db
       - rabbitmq
     command: ["./wait-for-db.sh", "poetry", "run", "celery", "-A", "server_config", "worker", "--loglevel=info"]
+    networks:
+      - app-network
 
   celery_beat:
     build:
@@ -74,6 +84,8 @@ services:
       - db
       - rabbitmq
     command: ["./wait-for-db.sh", "poetry", "run", "celery", "-A", "server_config", "beat", "--loglevel=info"]
+    networks:
+      - app-network
 
   client:
     build:
@@ -87,6 +99,8 @@ services:
     environment:
       - NODE_ENV=development
     command: yarn dev
+    networks:
+      - app-network
 
   nginx:
     build:
@@ -97,6 +111,8 @@ services:
     depends_on:
       - server
       - client
+    networks:
+      - app-network
 
   prometheus:
     image: prom/prometheus
@@ -104,6 +120,8 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
 
   grafana:
     image: grafana/grafana:latest
@@ -114,6 +132,12 @@ services:
       - ./grafana.ini:/etc/grafana/grafana.ini
     ports:
       - "3000:3000"
+    networks:
+      - app-network
 
 volumes:
   postgres_data:
+  rabbitmq_data:
+
+networks:
+  app-network:

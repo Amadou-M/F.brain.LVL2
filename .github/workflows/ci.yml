@@ -1,0 +1,70 @@
+name: CI – Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  POSTGRES_DB: devops_db
+  POSTGRES_USER: devops_user
+  POSTGRES_PASSWORD: devops_pass
+  POSTGRES_HOST: db
+  DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+  DJANGO_DEBUG: True
+  CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+  GF_SECURITY_ADMIN_USER: admin
+  GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: devops_db
+          POSTGRES_USER: devops_user
+          POSTGRES_PASSWORD: devops_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Setup environment files
+        run: bash .github/scripts/setup-env.sh
+
+      - name: Build Docker images
+        run: docker-compose build --parallel
+
+      - name: Start services for testing
+        run: docker-compose up -d db rabbitmq
+
+      - name: Wait for database
+        run: docker-compose run server ./wait-for-db.sh
+
+      - name: Run migrations
+        run: |
+          docker-compose run server poetry run python manage.py makemigrations
+          docker-compose run server poetry run python manage.py migrate
+
+      - name: Run Django tests

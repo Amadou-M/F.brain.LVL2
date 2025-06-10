@@ -1,0 +1,53 @@
+name: CD – Déploiement
+
+on:
+  workflow_run:
+    workflows: ["CI – Build and Test"]
+    types:
+      - completed
+
+env:
+  POSTGRES_DB: devops_db
+  POSTGRES_USER: devops_user
+  POSTGRES_PASSWORD: devops_pass
+  POSTGRES_HOST: db
+  DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+  DJANGO_DEBUG: True
+  CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+  GF_SECURITY_ADMIN_USER: admin
+  GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Setup environment files
+        run: bash .github/scripts/setup-env.sh
+
+      - name: Build and deploy
+        run: docker-compose up -d --build
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          urls=(
+            "http://localhost:80"
+            "http://localhost:8000/admin/"
+            "http://localhost:9090"
+            "http://localhost:3000"
+          )
+          for url in "${urls[@]}"; do
+            echo "Checking $url"
+            if curl -fsSL "$url"; then
+              echo "$url is up"
+            else
+              echo "Failed to reach $url"
+              exit 1
