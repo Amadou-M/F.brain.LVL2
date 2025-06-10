@@ -1,21 +1,23 @@
 FROM python:3.11
 
+# Définir le dossier de travail dans le conteneur
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean
+# Installer Poetry
+RUN pip install poetry
 
-RUN pip install poetry==1.8.3
+# Empêcher poetry de créer un environnement virtuel
+ENV POETRY_VIRTUALENVS_CREATE=false
 
-COPY pyproject.toml poetry.lock /app/
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-root --only main --no-interaction --no-ansi
+# Copier uniquement les fichiers de dépendances en premier
+COPY pyproject.toml poetry.lock* ./
 
-COPY . /app
+# Installer les dépendances du projet
+RUN poetry install --no-root --no-interaction --no-ansi
 
-COPY wait-for-db.sh /app/wait-for-db.sh
-# Ensure the wait-for-db.sh script is executable
-RUN chmod +x /app/wait-for-db.sh
 
-EXPOSE 8000
+# Copier tout le reste de l’application
+COPY . .
 
-CMD ["./wait-for-db.sh", "poetry", "run", "gunicorn", "--bind", "0.0.0.0:8000", "server_config.wsgi:application"]
+# Commande de démarrage par défaut (à adapter si besoin)
+CMD ["poetry", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
