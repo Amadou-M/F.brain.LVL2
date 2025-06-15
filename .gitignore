@@ -1,7 +1,10 @@
-.env
-*.pyc
+# Ignore Python virtual environments
+.venv
 __pycache__/
-**/__pycache__/
-*.log
-.env.*
-*.db
+*.py[cod]
+
+# Environment files
+.env
+
+# Node modules (si vous avez du JS)
+node_modules

@@ -8,7 +8,7 @@ const BookList = ({ token }) => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await axios.get('http://localhost/api/books/', {
+        const response = await axios.get('http://server:8000/api/books/', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         setBooks(response.data);

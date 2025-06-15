@@ -391,10 +391,7 @@ Modifiez les identifiants par défaut de RabbitMQ et Grafana.
 
 Configurez HTTPS pour Nginx en production (ajoutez un certificat SSL dans proxy/default.conf).
 
-🌟 Prochaines étapes
-
-
-
+🌟 Prochaines étapes  
 
 
 Ajouter des tests unitaires pour Django (server/library/tests.py) et React (client/src/__tests__).
